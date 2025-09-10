@@ -12,13 +12,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScanLine, Search, Package } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useAuth } from '@/store/auth-store';
 import { useAppStore } from '@/store/app-store';
 import { searchOrders } from '@/services/api';
 
 export default function ScannerScreen() {
   const [manualCode, setManualCode] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const { token } = useAppStore();
+  const { token, baseUrl } = useAuth();
 
   const handleSearch = async (code: string) => {
     if (!code.trim()) {
@@ -27,13 +28,12 @@ export default function ScannerScreen() {
     }
 
     if (!token) {
-      Alert.alert('Configuration requise', 'Veuillez configurer votre token API dans l\'onglet Configuration');
+      Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.');
       return;
     }
 
     setIsSearching(true);
     try {
-      const { baseUrl } = useAppStore.getState();
       const orders = await searchOrders(code, token, baseUrl);
       
       if (orders.length === 0) {
@@ -58,7 +58,7 @@ export default function ScannerScreen() {
 
   const openBarcodeScanner = () => {
     if (!token) {
-      Alert.alert('Configuration requise', 'Veuillez configurer votre token API dans l\'onglet Configuration');
+      Alert.alert('Erreur', 'Session expirée. Veuillez vous reconnecter.');
       return;
     }
     router.push('/barcode-scanner');
@@ -117,13 +117,7 @@ export default function ScannerScreen() {
           </View>
         </View>
 
-        {!token && (
-          <View style={styles.warningCard}>
-            <Text style={styles.warningText}>
-              ⚠️ Token API non configuré. Rendez-vous dans l&apos;onglet Configuration pour commencer.
-            </Text>
-          </View>
-        )}
+
       </ScrollView>
     </SafeAreaView>
   );

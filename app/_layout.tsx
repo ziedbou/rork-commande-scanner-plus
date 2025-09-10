@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useAppStore } from "@/store/app-store";
+import { AuthProvider } from "@/store/auth-store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,16 +16,16 @@ function RootLayoutNav() {
       <Stack.Screen name="barcode-scanner" options={{ presentation: "modal" }} />
       <Stack.Screen name="order-details" options={{ presentation: "card" }} />
       <Stack.Screen name="order-selection" options={{ presentation: "card" }} />
+      <Stack.Screen name="login-email" options={{ headerShown: false }} />
+      <Stack.Screen name="login-company-selection" options={{ headerShown: false }} />
+      <Stack.Screen name="login-password" options={{ headerShown: false }} />
     </Stack>
   );
 }
 
 export default function RootLayout() {
-  const { loadFromStorage } = useAppStore();
-
   useEffect(() => {
     const initializeApp = async () => {
-      await loadFromStorage();
       SplashScreen.hideAsync();
     };
 
@@ -34,9 +34,11 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <RootLayoutNav />
-      </GestureHandlerRootView>
+      <AuthProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <RootLayoutNav />
+        </GestureHandlerRootView>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -32,6 +32,29 @@ interface ScanUploadResponse {
   action_preview: string;
 }
 
+interface Company {
+  company__slug: string;
+  company__name: string;
+  company__logo: string;
+}
+
+interface CompaniesResponse {
+  companies: Company[];
+}
+
+interface LoginResponse {
+  user: any;
+  token: string;
+  status: number;
+}
+
+interface User {
+  id: number;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export const searchOrders = async (code: string, token: string, baseUrl: string = 'https://api.tiktak.space'): Promise<Order[]> => {
   console.log(`🚀 Début de recherche pour le code: "${code}" sur ${baseUrl}`);
   console.log(`🔑 Token présent: ${token ? 'Oui' : 'Non'}`);
@@ -138,4 +161,65 @@ export const uploadScan = async (
 
   console.log(`✅ Upload réussi:`, json);
   return json; // attendu: { success, cloudinary:{url...}, ... }
+};
+
+export const getCompaniesByEmail = async (email: string, baseUrl: string = 'http://api.tiktak.space'): Promise<Company[]> => {
+  console.log(`🏢 Recherche des sociétés pour: ${email}`);
+  
+  const url = `${baseUrl}/api/v1/get-comapnies-by-email/`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  console.log(`📡 Réponse API - Status: ${response.status}`);
+
+  if (!response.ok) {
+    if (response.status >= 500) {
+      throw new Error('Service momentanément indisponible. Réessayez.');
+    }
+    throw new Error('Impossible de vérifier l\'e-mail. Vérifiez votre connexion.');
+  }
+
+  const data: CompaniesResponse = await response.json();
+  console.log(`✅ Trouvé ${data.companies?.length || 0} société(s)`);
+  
+  return data.companies || [];
+};
+
+export const loginMobile = async (
+  email: string, 
+  password: string, 
+  slug: string, 
+  baseUrl: string = 'http://api.tiktak.space'
+): Promise<LoginResponse> => {
+  console.log(`🔐 Tentative de connexion pour: ${email} sur ${slug}`);
+  
+  const url = `${baseUrl}/api/v1/login-mobile/`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, slug }),
+  });
+
+  console.log(`📡 Réponse API - Status: ${response.status}`);
+
+  const data = await response.json();
+
+  if (!response.ok || data.status !== 200) {
+    if (response.status === 401 || response.status === 400) {
+      throw new Error('E-mail ou mot de passe incorrect. Veuillez réessayer.');
+    }
+    throw new Error('Connexion impossible pour le moment.');
+  }
+
+  console.log(`✅ Connexion réussie pour: ${email}`);
+  return data;
 };

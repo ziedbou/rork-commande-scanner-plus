@@ -6,59 +6,70 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Save, Trash2, Info, Wifi } from 'lucide-react-native';
+import { Settings, Save, LogOut, User, Globe } from 'lucide-react-native';
+import { useAuth } from '@/store/auth-store';
 import { useAppStore } from '@/store/app-store';
-import { searchOrders } from '@/services/api';
+import { router } from 'expo-router';
 
 export default function SettingsScreen() {
-  const { token, baseUrl, setToken, setBaseUrl, clearHistory } = useAppStore();
-  const [tokenInput, setTokenInput] = useState(token || '');
+  const { user, selectedCompany, baseUrl, logout, updateBaseUrl } = useAuth();
+  const { clearHistory } = useAppStore();
   const [urlInput, setUrlInput] = useState(baseUrl);
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    if (!tokenInput.trim()) {
-      Alert.alert('Erreur', 'Le token API est obligatoire');
-      return;
-    }
-
-    setToken(tokenInput.trim());
-    setBaseUrl(urlInput.trim() || 'https://api.tiktak.space');
-    Alert.alert('Succès', 'Configuration sauvegardée');
+  const handleSaveUrl = async () => {
+    const newUrl = urlInput.trim() || 'http://api.tiktak.space';
+    await updateBaseUrl(newUrl);
+    Alert.alert('Succès', 'URL de base mise à jour');
   };
 
   const handleClearHistory = () => {
-    clearHistory();
-    Alert.alert('Succès', 'Historique supprimé');
+    Alert.alert(
+      'Confirmation',
+      'Êtes-vous sûr de vouloir supprimer l\'historique ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => {
+            clearHistory();
+            Alert.alert('Succès', 'Historique supprimé');
+          },
+        },
+      ]
+    );
   };
 
-  const testConnection = async () => {
-    if (!tokenInput.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir un token avant de tester la connexion');
-      return;
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            await logout();
+            router.replace('/login-email');
+            setIsLoading(false);
+          },
+        },
+      ]
+    );
+  };
 
-    setIsTestingConnection(true);
-    try {
-      console.log('🧪 Test de connexion API...');
-      // Test avec un code fictif pour vérifier la connexion
-      await searchOrders('TEST_CONNECTION_123456', tokenInput.trim(), urlInput.trim() || 'https://api.tiktak.space');
-      Alert.alert('Succès', 'Connexion à l\'API réussie ! Le token est valide.');
-    } catch (error: any) {
-      if (error.message.includes('Token invalide')) {
-        Alert.alert('Erreur', 'Token invalide. Vérifiez votre token d\'accès.');
-      } else if (error.message.includes('Service momentanément')) {
-        Alert.alert('Erreur', 'Service temporairement indisponible. Réessayez plus tard.');
-      } else {
-        Alert.alert('Succès', 'Connexion à l\'API réussie ! (Aucune commande trouvée pour le test, mais l\'authentification fonctionne)');
-      }
-    } finally {
-      setIsTestingConnection(false);
+  const getLogoUrl = (logoPath: string) => {
+    if (logoPath?.startsWith('http')) {
+      return logoPath;
     }
+    return `${baseUrl}/${logoPath}`;
   };
 
   return (
@@ -66,14 +77,40 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Settings size={48} color="#2563eb" />
-          <Text style={styles.title}>Configuration</Text>
+          <Text style={styles.title}>Paramètres</Text>
           <Text style={styles.subtitle}>
-            Configurez votre accès à l&apos;API TikTak
+            Gérez votre compte et vos préférences
           </Text>
         </View>
 
+        {/* Profil utilisateur */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>API Configuration</Text>
+          <Text style={styles.sectionTitle}>Profil</Text>
+          
+          <View style={styles.profileCard}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={{ uri: getLogoUrl(selectedCompany?.company__logo || '') }}
+                style={styles.logo}
+                defaultSource={require('@/assets/images/icon.png')}
+              />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.userName}>
+                {user?.first_name && user?.last_name 
+                  ? `${user.first_name} ${user.last_name}`
+                  : user?.email
+                }
+              </Text>
+              <Text style={styles.userEmail}>{user?.email}</Text>
+              <Text style={styles.companyName}>{selectedCompany?.company__name}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Configuration API */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Configuration API</Text>
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>URL de base</Text>
@@ -81,62 +118,38 @@ export default function SettingsScreen() {
               style={styles.input}
               value={urlInput}
               onChangeText={setUrlInput}
-              placeholder="https://api.tiktak.space"
+              placeholder="http://api.tiktak.space"
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Token d&apos;accès *</Text>
-            <TextInput
-              style={styles.input}
-              value={tokenInput}
-              onChangeText={setTokenInput}
-              placeholder="Votre token API"
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-            />
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.testButton} onPress={testConnection} disabled={isTestingConnection}>
-              {isTestingConnection ? (
-                <ActivityIndicator size="small" color="#2563eb" />
-              ) : (
-                <Wifi size={20} color="#2563eb" />
-              )}
-              <Text style={styles.testButtonText}>
-                {isTestingConnection ? 'Test...' : 'Tester'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Save size={20} color="white" />
-              <Text style={styles.saveButtonText}>Sauvegarder</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Données</Text>
-          
-          <TouchableOpacity style={styles.dangerButton} onPress={handleClearHistory}>
-            <Trash2 size={20} color="#dc2626" />
-            <Text style={styles.dangerButtonText}>Supprimer l&apos;historique</Text>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveUrl}>
+            <Globe size={20} color="white" />
+            <Text style={styles.saveButtonText}>Mettre à jour l'URL</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.infoCard}>
-          <Info size={20} color="#2563eb" />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Comment obtenir votre token ?</Text>
-            <Text style={styles.infoText}>
-              Contactez votre administrateur système pour obtenir votre token d&apos;accès à l&apos;API TikTak.
-            </Text>
-          </View>
+        {/* Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Actions</Text>
+          
+          <TouchableOpacity style={styles.actionButton} onPress={handleClearHistory}>
+            <Settings size={20} color="#6B7280" />
+            <Text style={styles.actionButtonText}>Supprimer l'historique</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            disabled={isLoading}
+          >
+            <LogOut size={20} color="#dc2626" />
+            <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+          </TouchableOpacity>
         </View>
+
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,25 +218,80 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  testButton: {
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  logoContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  logo: {
+    width: 45,
+    height: 45,
+    borderRadius: 8,
+  },
+  profileInfo: {
     flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 2,
+  },
+  companyName: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500' as const,
+  },
+  actionButton: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 12,
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: '#e2e8f0',
+    marginBottom: 12,
   },
-  testButtonText: {
-    color: '#2563eb',
+  actionButtonText: {
+    color: '#374151',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500' as const,
+  },
+  logoutButton: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  logoutButtonText: {
+    color: '#dc2626',
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   saveButton: {
-    flex: 1,
     backgroundColor: '#2563eb',
     borderRadius: 12,
     padding: 16,
@@ -237,43 +305,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  dangerButton: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  dangerButtonText: {
-    color: '#dc2626',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  infoCard: {
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    gap: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e40af',
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#1e40af',
-    lineHeight: 20,
-  },
+
 });

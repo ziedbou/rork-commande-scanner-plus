@@ -12,7 +12,7 @@ import { Stack, router } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { X, Flashlight, FlashlightOff } from 'lucide-react-native';
 import { searchOrders } from '@/services/api';
-import { useAppStore } from '@/store/app-store';
+import { useAuth } from '@/store/auth-store';
 
 // Mock barcode scanner for web compatibility
 const MockBarcodeScanner = ({ onBarcodeScanned }: { onBarcodeScanned: (data: string) => void }) => {
@@ -36,7 +36,7 @@ export default function BarcodeScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
-  const { token, baseUrl } = useAppStore();
+  const { token, baseUrl } = useAuth();
 
   console.log('Scanner - Permission status:', permission?.granted);
   console.log('Scanner - Platform:', Platform.OS);
