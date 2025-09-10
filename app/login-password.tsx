@@ -41,12 +41,8 @@ export default function LoginPasswordScreen() {
 
       await login(email as string, password, company);
       
-      Alert.alert('Succès', 'Connexion réussie.', [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/scanner'),
-        },
-      ]);
+      // Redirection directe vers la page de scan après connexion réussie
+      router.replace('/(tabs)/scanner');
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Connexion impossible pour le moment.');
     } finally {
