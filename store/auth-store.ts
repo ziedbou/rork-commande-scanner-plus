@@ -31,7 +31,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     token: null,
     user: null,
     selectedCompany: null,
-    baseUrl: 'http://api.tiktak.space',
+    baseUrl: 'https://api.tiktak.space',
     isLoading: true,
   });
 
@@ -62,7 +62,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         token,
         user: parsedUser,
         selectedCompany: parsedCompany,
-        baseUrl: baseUrl || 'http://api.tiktak.space',
+        baseUrl: baseUrl || 'https://api.tiktak.space',
         isLoading: false,
       });
 

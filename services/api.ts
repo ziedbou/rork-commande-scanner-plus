@@ -163,7 +163,7 @@ export const uploadScan = async (
   return json; // attendu: { success, cloudinary:{url...}, ... }
 };
 
-export const getCompaniesByEmail = async (email: string, baseUrl: string = 'http://api.tiktak.space'): Promise<Company[]> => {
+export const getCompaniesByEmail = async (email: string, baseUrl: string = 'https://api.tiktak.space'): Promise<Company[]> => {
   console.log(`🏢 Recherche des sociétés pour: ${email}`);
   
   const url = `${baseUrl}/api/v1/get-comapnies-by-email/`;
@@ -195,7 +195,7 @@ export const loginMobile = async (
   email: string, 
   password: string, 
   slug: string, 
-  baseUrl: string = 'http://api.tiktak.space'
+  baseUrl: string = 'https://api.tiktak.space'
 ): Promise<LoginResponse> => {
   console.log(`🔐 Tentative de connexion pour: ${email} sur ${slug}`);
   
