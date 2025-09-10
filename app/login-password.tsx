@@ -44,7 +44,7 @@ export default function LoginPasswordScreen() {
       Alert.alert('Succès', 'Connexion réussie.', [
         {
           text: 'OK',
-          onPress: () => router.replace('/(tabs)/scanner'),
+          onPress: () => router.replace('/scanner'),
         },
       ]);
     } catch (error: any) {

@@ -18,7 +18,7 @@ export default function Index() {
     return <Redirect href="/login-email" />;
   }
 
-  return <Redirect href="/(tabs)/scanner" />;
+  return <Redirect href="/scanner" />;
 }
 
 const styles = StyleSheet.create({
